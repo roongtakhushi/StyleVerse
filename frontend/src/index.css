@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-ivory-50 text-charcoal-900 font-sans antialiased selection:bg-sand-200 selection:text-charcoal-950;
+  }
+  
+  h1, h2, h3, h4, .font-editorial {
+    @apply font-serif tracking-tight;
+  }
+}
+
+.glass-panel {
+  background: rgba(253, 251, 247, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(229, 218, 200, 0.5);
+}
+
+.luxury-card {
+  @apply bg-white rounded-2xl border border-ivory-300/60 shadow-sm transition-all duration-300 hover:shadow-md hover:border-sand-300;
+}
