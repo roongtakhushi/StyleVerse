@@ -4,18 +4,17 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000
 
-# Install system dependencies required for OpenCV, MediaPipe and Pillow
+# Install minimal build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install lightweight CPU-only PyTorch first (drastically reduces image size & memory footprint)
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Upgrade pip/wheel and install CPU-only PyTorch with PyPI fallback
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Copy requirements and install dependencies
 COPY requirements.txt .
