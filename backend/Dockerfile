@@ -2,6 +2,7 @@ FROM python:3.10-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH="/app:/app/backend" \
     PORT=8000
 
 # Install minimal build tools

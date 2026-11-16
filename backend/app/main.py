@@ -1,4 +1,13 @@
 import os
+import sys
+
+# Ensure both repository root (containing 'ml') and backend dir are in sys.path
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+project_root = os.path.dirname(backend_dir)
+for p in [project_root, backend_dir]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
