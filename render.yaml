@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: styleverse-backend
+    env: python
+    rootDir: .
+    buildCommand: "pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && pip install -r backend/requirements.txt"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12
+      - key: DATABASE_NAME
+        value: styleverse
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 10080
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGODB_URL
+        sync: false
