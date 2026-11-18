@@ -82,7 +82,13 @@ export const Wardrobe = () => {
       fetchWardrobe();
     } catch (err) {
       console.error('Upload error:', err);
-      setStatusMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to upload and classify clothing item.' });
+      const detail = err.response?.data?.detail;
+      const errorText = typeof detail === 'string'
+        ? detail
+        : (err.message && err.message.includes('timeout'))
+          ? 'Upload timed out. The cloud instance is busy, please retry in a few moments.'
+          : 'Failed to upload and classify clothing item. Please ensure you are uploading an image file (JPG, PNG, WEBP).';
+      setStatusMsg({ type: 'error', text: errorText });
     } finally {
       setUploading(false);
     }
