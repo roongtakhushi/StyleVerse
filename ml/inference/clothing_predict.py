@@ -1,8 +1,6 @@
 import os
 import json
 import numpy as np
-import torch
-import torch.nn as nn
 from PIL import Image
 
 FASHION_CATEGORIES = ["top", "bottom", "footwear", "outerwear", "dress", "accessory"]
@@ -81,6 +79,7 @@ def get_clip_model():
     global _clip_model, _clip_processor
     if _clip_model is None:
         try:
+            import torch
             from transformers import CLIPProcessor, CLIPModel
             model_name = "openai/clip-vit-base-patch32"
             _clip_processor = CLIPProcessor.from_pretrained(model_name)
@@ -93,78 +92,80 @@ def get_clip_model():
             _clip_processor = None
     return _clip_model, _clip_processor
 
-# Fallback MobileNetV2 architecture
-class ConvNormActivation(nn.Sequential):
-    def __init__(self, in_planes: int, out_planes: int, kernel_size: int = 3, stride: int = 1, groups: int = 1):
-        padding = (kernel_size - 1) // 2
-        super().__init__(
-            nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, groups=groups, bias=False),
-            nn.BatchNorm2d(out_planes),
-            nn.ReLU6(inplace=True)
-        )
-
-class InvertedResidual(nn.Module):
-    def __init__(self, inp: int, oup: int, stride: int, expand_ratio: int):
-        super().__init__()
-        self.stride = stride
-        hidden_dim = int(round(inp * expand_ratio))
-        self.use_res_connect = self.stride == 1 and inp == oup
-        layers = []
-        if expand_ratio != 1:
-            layers.append(ConvNormActivation(inp, hidden_dim, kernel_size=1))
-        layers.extend([
-            ConvNormActivation(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
-            nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(oup),
-        ])
-        self.conv = nn.Sequential(*layers)
-
-    def forward(self, x):
-        if self.use_res_connect:
-            return x + self.conv(x)
-        return self.conv(x)
-
-class MobileNetV2FashionBackbone(nn.Module):
-    def __init__(self, embedding_dim: int = 128):
-        super().__init__()
-        inverted_residual_setting = [
-            [1, 16, 1, 1],
-            [6, 24, 2, 2],
-            [6, 32, 3, 2],
-            [6, 64, 4, 2],
-            [6, 96, 3, 1],
-            [6, 160, 3, 2],
-            [6, 320, 1, 1],
-        ]
-        input_channel = 32
-        last_channel = 1280
-        features = [ConvNormActivation(3, input_channel, stride=2)]
-        for t, c, n, s in inverted_residual_setting:
-            output_channel = c
-            for i in range(n):
-                stride = s if i == 0 else 1
-                features.append(InvertedResidual(input_channel, output_channel, stride, expand_ratio=t))
-                input_channel = output_channel
-        features.append(ConvNormActivation(input_channel, last_channel, kernel_size=1))
-        self.features = nn.Sequential(*features)
-        self.embedding_head = nn.Sequential(
-            nn.Linear(last_channel, embedding_dim),
-            nn.LayerNorm(embedding_dim)
-        )
-
-    def extract_embedding(self, x):
-        feat = self.features(x)
-        feat = nn.functional.adaptive_avg_pool2d(feat, (1, 1))
-        feat = torch.flatten(feat, 1)
-        emb = self.embedding_head(feat)
-        return emb / (torch.norm(emb, p=2, dim=1, keepdim=True) + 1e-8)
-
 _mobilenet = None
 
 def get_fallback_mobilenet():
     global _mobilenet
     if _mobilenet is None:
         try:
+            import torch
+            import torch.nn as nn
+
+            class ConvNormActivation(nn.Sequential):
+                def __init__(self, in_planes: int, out_planes: int, kernel_size: int = 3, stride: int = 1, groups: int = 1):
+                    padding = (kernel_size - 1) // 2
+                    super().__init__(
+                        nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, groups=groups, bias=False),
+                        nn.BatchNorm2d(out_planes),
+                        nn.ReLU6(inplace=True)
+                    )
+
+            class InvertedResidual(nn.Module):
+                def __init__(self, inp: int, oup: int, stride: int, expand_ratio: int):
+                    super().__init__()
+                    self.stride = stride
+                    hidden_dim = int(round(inp * expand_ratio))
+                    self.use_res_connect = self.stride == 1 and inp == oup
+                    layers = []
+                    if expand_ratio != 1:
+                        layers.append(ConvNormActivation(inp, hidden_dim, kernel_size=1))
+                    layers.extend([
+                        ConvNormActivation(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
+                        nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
+                        nn.BatchNorm2d(oup),
+                    ])
+                    self.conv = nn.Sequential(*layers)
+
+                def forward(self, x):
+                    if self.use_res_connect:
+                        return x + self.conv(x)
+                    return self.conv(x)
+
+            class MobileNetV2FashionBackbone(nn.Module):
+                def __init__(self, embedding_dim: int = 128):
+                    super().__init__()
+                    inverted_residual_setting = [
+                        [1, 16, 1, 1],
+                        [6, 24, 2, 2],
+                        [6, 32, 3, 2],
+                        [6, 64, 4, 2],
+                        [6, 96, 3, 1],
+                        [6, 160, 3, 2],
+                        [6, 320, 1, 1],
+                    ]
+                    input_channel = 32
+                    last_channel = 1280
+                    features = [ConvNormActivation(3, input_channel, stride=2)]
+                    for t, c, n, s in inverted_residual_setting:
+                        output_channel = c
+                        for i in range(n):
+                            stride = s if i == 0 else 1
+                            features.append(InvertedResidual(input_channel, output_channel, stride, expand_ratio=t))
+                            input_channel = output_channel
+                    features.append(ConvNormActivation(input_channel, last_channel, kernel_size=1))
+                    self.features = nn.Sequential(*features)
+                    self.embedding_head = nn.Sequential(
+                        nn.Linear(last_channel, embedding_dim),
+                        nn.LayerNorm(embedding_dim)
+                    )
+
+                def extract_embedding(self, x):
+                    feat = self.features(x)
+                    feat = nn.functional.adaptive_avg_pool2d(feat, (1, 1))
+                    feat = torch.flatten(feat, 1)
+                    emb = self.embedding_head(feat)
+                    return emb / (torch.norm(emb, p=2, dim=1, keepdim=True) + 1e-8)
+
             m = MobileNetV2FashionBackbone(embedding_dim=128)
             weights_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "fashion_mobilenetv2.pth")
             if os.path.exists(weights_path):
@@ -181,6 +182,7 @@ def extract_clothing_embedding(image_path: str) -> np.ndarray:
     Extracts a 512-dimensional normalized visual embedding vector using CLIP ViT-B/32.
     Falls back to MobileNetV2 128D if CLIP is unavailable.
     """
+    import torch
     model, processor = get_clip_model()
     if model is not None and processor is not None:
         try:
@@ -222,6 +224,7 @@ def classify_clothing(image_path: str) -> dict:
     Performs two-step hierarchical recognition (Category -> Subcategory) and style inference,
     completely independent of aspect-ratio or cropping geometry.
     """
+    import torch
     model, processor = get_clip_model()
     if model is not None and processor is not None:
         try:

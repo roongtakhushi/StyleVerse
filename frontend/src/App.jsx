@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import api from './services/api';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './pages/Landing';
@@ -14,6 +15,18 @@ import { Profile } from './pages/Profile';
 import { SavedLooks } from './pages/SavedLooks';
 
 export default function App() {
+  useEffect(() => {
+    // Silent pre-warming ping to wake up the Render cloud backend the moment a user visits
+    const prewarmBackend = async () => {
+      try {
+        await api.get('/health');
+      } catch (e) {
+        // Silent non-blocking wake-up signal
+      }
+    };
+    prewarmBackend();
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-ivory-50 text-charcoal-900">
       <Navbar />

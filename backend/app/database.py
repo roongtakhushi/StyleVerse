@@ -128,7 +128,6 @@ FALLBACK_GARMENTS = [
 async def seed_resilient_database(db):
     """Pre-seeds test accounts and clean studio wardrobe items into the resilient store."""
     from app.utils.auth import get_password_hash
-    from ml.inference.clothing_predict import extract_clothing_embedding
     
     # 1. Seed users
     users_to_seed = [
@@ -179,18 +178,6 @@ async def seed_resilient_database(db):
                 
         emb = None
         colors = g.get("dominant_colors", ["#000000"])
-        if os.path.exists(dest_path):
-            try:
-                emb = extract_clothing_embedding(dest_path).tolist()
-            except Exception:
-                pass
-            try:
-                from ml.preprocessing.color_extraction import extract_dominant_colors
-                real_colors = extract_dominant_colors(dest_path, k=3)
-                if real_colors:
-                    colors = real_colors
-            except Exception as ce:
-                print(f"Color extraction note: {ce}")
                 
         for uid in seeded_user_ids:
             item_doc = {
