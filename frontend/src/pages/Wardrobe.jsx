@@ -268,6 +268,11 @@ export const Wardrobe = () => {
                   <img
                     src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
                     alt={item.subcategory || item.category}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder-garment.svg';
+                    }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-2 right-2">

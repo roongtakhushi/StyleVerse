@@ -271,6 +271,10 @@ export const AIStylist = () => {
                                 <img
                                   src={img}
                                   alt={item?.subcategory || slot}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = '/placeholder-garment.svg';
+                                  }}
                                   className="w-full h-full object-cover"
                                 />
                                 <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-charcoal-950/80 text-white text-[10px] uppercase tracking-wider font-semibold">

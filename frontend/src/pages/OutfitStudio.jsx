@@ -127,6 +127,10 @@ export const OutfitStudio = () => {
                 <img
                   src={selectedTop.image_url?.startsWith('http') ? selectedTop.image_url : `${IMAGE_BASE_URL}${selectedTop.image_url}`}
                   alt="Selected Top"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/placeholder-garment.svg';
+                  }}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -143,6 +147,10 @@ export const OutfitStudio = () => {
                 <img
                   src={selectedBottom.image_url?.startsWith('http') ? selectedBottom.image_url : `${IMAGE_BASE_URL}${selectedBottom.image_url}`}
                   alt="Selected Bottom"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/placeholder-garment.svg';
+                  }}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -159,6 +167,10 @@ export const OutfitStudio = () => {
                 <img
                   src={selectedFootwear.image_url?.startsWith('http') ? selectedFootwear.image_url : `${IMAGE_BASE_URL}${selectedFootwear.image_url}`}
                   alt="Selected Footwear"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/placeholder-garment.svg';
+                  }}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -219,6 +231,10 @@ export const OutfitStudio = () => {
                   <img
                     src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
                     alt="Top"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder-garment.svg';
+                    }}
                     className="w-full h-full object-cover"
                   />
                   {selectedTop?.id === item.id && (
@@ -257,6 +273,10 @@ export const OutfitStudio = () => {
                   <img
                     src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
                     alt="Bottom"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder-garment.svg';
+                    }}
                     className="w-full h-full object-cover"
                   />
                   {selectedBottom?.id === item.id && (
@@ -295,6 +315,10 @@ export const OutfitStudio = () => {
                   <img
                     src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
                     alt="Footwear"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/placeholder-garment.svg';
+                    }}
                     className="w-full h-full object-cover"
                   />
                   {selectedFootwear?.id === item.id && (

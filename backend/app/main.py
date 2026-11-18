@@ -43,13 +43,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Upload directory static mount
+class CORSStaticFiles(StaticFiles):
+    """
+    Subclass of Starlette StaticFiles that injects permissive CORS and CORP headers
+    so cross-origin frontends (e.g. Vercel) can render images without ORB or CORS blocking.
+    """
+    async def get_response(self, path: str, scope):
+        try:
+            response = await super().get_response(path, scope)
+        except Exception:
+            from starlette.responses import Response
+            response = Response(status_code=404)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+
+# Upload directory static mount with cross-origin headers
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+app.mount("/uploads", CORSStaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+app.mount("/api/uploads", CORSStaticFiles(directory=settings.UPLOAD_DIR), name="api_uploads")
 
 # Application lifecycle
 @app.on_event("startup")
 async def startup_event():
+    # Ensure default studio cutouts exist in upload dir if missing
+    try:
+        cutouts_dir = os.path.join(project_root, "test_samples", "studio_cutouts")
+        if os.path.exists(cutouts_dir):
+            import shutil
+            for fname in os.listdir(cutouts_dir):
+                src = os.path.join(cutouts_dir, fname)
+                dest = os.path.join(settings.UPLOAD_DIR, f"studio_live_{fname}")
+                if os.path.isfile(src) and not os.path.exists(dest):
+                    shutil.copyfile(src, dest)
+    except Exception as e:
+        print(f"Startup asset copy notice: {e}")
     await connect_to_mongo()
 
 @app.on_event("shutdown")

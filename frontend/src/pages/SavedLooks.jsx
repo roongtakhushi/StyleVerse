@@ -187,6 +187,10 @@ export const SavedLooks = () => {
                             <img
                               src={imgUrl}
                               alt={role}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/placeholder-garment.svg';
+                              }}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                             <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-charcoal-950/80 text-white text-[9px] uppercase font-bold tracking-wider">

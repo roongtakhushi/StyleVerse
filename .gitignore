@@ -31,9 +31,12 @@ wheels/
 .installed.cfg
 *.egg
 
-# User uploads & cached models
+# User uploads & cached models (preserve default studio cutouts and clean transparent pngs)
 backend/uploads/*
 !backend/uploads/.gitkeep
+!backend/uploads/studio_*.jpg
+!backend/uploads/clean_*.png
+!backend/uploads/test_cutout_dress.png
 ml/models/*.h5
 ml/models/*.keras
 ml/datasets/*
