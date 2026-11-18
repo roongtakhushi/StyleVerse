@@ -1,10 +1,16 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-export const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_BASE_URL || 'http://localhost:8000';
+// Resilient API base URL normalization (handles trailing slashes, missing /api prefix, etc.)
+const rawBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const cleanBase = rawBase.trim().replace(/\/+$/, '');
+const API_BASE_URL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
+
+const rawImageBase = import.meta.env.VITE_IMAGE_BASE_URL || cleanBase.replace(/\/api$/, '') || 'http://localhost:8000';
+export const IMAGE_BASE_URL = rawImageBase.trim().replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 45000, // 45s timeout to gracefully accommodate Render cold starts
   headers: {
     'Content-Type': 'application/json',
   },

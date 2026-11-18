@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+
+const formatAuthError = (err, fallbackMsg) => {
+  if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+    return 'Server response timed out. The cloud instance is waking up from free-tier sleep (~30s). Please click again to retry.';
+  }
+  if (!err.response) {
+    return 'Could not connect to StyleVerse backend. The cloud instance may be waking up. Please wait 15 seconds and try again.';
+  }
+  if (err.response.status === 404) {
+    return err.response.data?.detail || 'No account found with this email. Please check your spelling or create an account.';
+  }
+  if (err.response.status === 503) {
+    return 'Database service is currently initializing. Please wait a few moments and try again.';
+  }
+  return err.response.data?.detail || fallbackMsg;
+};
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,7 +38,7 @@ export const Login = () => {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid email or password. Please try again.');
+      setError(formatAuthError(err, 'Invalid email or password. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +95,10 @@ export const Login = () => {
             className="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-xl bg-charcoal-950 text-white font-medium text-sm tracking-wider hover:bg-charcoal-800 transition-colors disabled:opacity-50"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs">Connecting (cloud wake-up may take ~20s)...</span>
+              </div>
             ) : (
               <>
                 <span>Sign In</span>
@@ -120,7 +139,7 @@ export const Register = () => {
       await register(name, email, password, genderPreference);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed. Please check inputs.');
+      setError(formatAuthError(err, 'Registration failed. Please check inputs and try again.'));
     } finally {
       setLoading(false);
     }
@@ -207,7 +226,10 @@ export const Register = () => {
             className="w-full mt-4 flex justify-center items-center gap-2 py-3.5 px-4 rounded-xl bg-charcoal-950 text-white font-medium text-sm tracking-wider hover:bg-charcoal-800 transition-colors disabled:opacity-50"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs">Creating profile (cloud wake-up may take ~20s)...</span>
+              </div>
             ) : (
               <>
                 <span>Create Style Profile</span>

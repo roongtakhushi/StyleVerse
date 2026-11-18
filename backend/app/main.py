@@ -72,10 +72,21 @@ async def health_check():
         }
     }
 
-# Register all API endpoints under /api
+# Register all API endpoints under /api and root aliases for total client URL resilience
 app.include_router(auth.router, prefix=settings.API_V1_STR)
+app.include_router(auth.router, prefix="", tags=["Auth-Aliases"])
+
 app.include_router(users.router, prefix=settings.API_V1_STR)
+app.include_router(users.router, prefix="", tags=["Users-Aliases"])
+
 app.include_router(skin.router, prefix=settings.API_V1_STR)
+app.include_router(skin.router, prefix="", tags=["Skin-Aliases"])
+
 app.include_router(wardrobe.router, prefix=settings.API_V1_STR)
+app.include_router(wardrobe.router, prefix="", tags=["Wardrobe-Aliases"])
+
 app.include_router(outfits.router, prefix=settings.API_V1_STR)
+app.include_router(outfits.router, prefix="", tags=["Outfits-Aliases"])
+
 app.include_router(planner.router, prefix=settings.API_V1_STR)
+app.include_router(planner.router, prefix="", tags=["Planner-Aliases"])
