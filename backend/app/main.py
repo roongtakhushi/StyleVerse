@@ -87,9 +87,10 @@ async def startup_event():
 async def shutdown_event():
     await close_mongo_connection()
 
-# Database health-check endpoint (sanitized - no sensitive URI or credentials)
-@app.get("/api/health", tags=["Health"])
-@app.get("/health", tags=["Health"])
+# Database health-check endpoint (sanitized - supports both GET and HEAD for free Uptime monitors)
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
 async def health_check():
     db_connected = False
     mode = "atlas"
