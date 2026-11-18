@@ -21,6 +21,19 @@ app = FastAPI(
     description="STYLEVERSE – AI-Powered Personalized Fashion Styling and Outfit Recommendation System API"
 )
 
+import re
+
+class SlashMiddleware:
+    """Normalizes duplicate consecutive slashes (e.g. //auth/login -> /auth/login) for client resilience."""
+    def __init__(self, app):
+        self.app = app
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            scope["path"] = re.sub(r"/+", "/", scope["path"])
+        await self.app(scope, receive, send)
+
+app.add_middleware(SlashMiddleware)
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
