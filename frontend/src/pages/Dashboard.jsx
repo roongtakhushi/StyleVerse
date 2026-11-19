@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api, { IMAGE_BASE_URL } from '../services/api';
+import api, { IMAGE_BASE_URL, resolveGarmentImageUrl, handleGarmentImageError } from '../services/api';
 import { 
   Sparkles, 
   Shirt, 
@@ -199,13 +199,10 @@ export const Dashboard = () => {
                 <div key={item.id} className="group rounded-2xl border border-sand-200 overflow-hidden bg-ivory-50 flex flex-col">
                   <div className="aspect-square w-full overflow-hidden bg-white relative">
                     <img
-                      src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
+                      src={resolveGarmentImageUrl(item.image_url)}
                       alt={item.subcategory || item.category}
                       loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/placeholder-garment.svg';
-                      }}
+                      onError={(e) => handleGarmentImageError(e, item.image_url)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>

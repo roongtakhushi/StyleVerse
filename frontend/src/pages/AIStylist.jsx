@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api, { IMAGE_BASE_URL } from '../services/api';
+import api, { IMAGE_BASE_URL, resolveGarmentImageUrl, handleGarmentImageError } from '../services/api';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -262,8 +262,7 @@ export const AIStylist = () => {
                       <div className={`grid grid-cols-1 ${gridColsClass} gap-6`}>
                         {presentSlots.map((slot) => {
                           const item = outfit.items[slot];
-                          const rawImg = item?.image_url || '';
-                          const img = rawImg.startsWith('http') ? rawImg : `${IMAGE_BASE_URL}${rawImg}`;
+                          const img = resolveGarmentImageUrl(item?.image_url);
 
                           return (
                             <div key={slot} className="rounded-2xl border border-sand-200 overflow-hidden bg-ivory-50 flex flex-col">
@@ -271,10 +270,7 @@ export const AIStylist = () => {
                                 <img
                                   src={img}
                                   alt={item?.subcategory || slot}
-                                  onError={(e) => {
-                                    e.currentTarget.onerror = null;
-                                    e.currentTarget.src = '/placeholder-garment.svg';
-                                  }}
+                                  onError={(e) => handleGarmentImageError(e, item?.image_url)}
                                   className="w-full h-full object-cover"
                                 />
                                 <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-charcoal-950/80 text-white text-[10px] uppercase tracking-wider font-semibold">

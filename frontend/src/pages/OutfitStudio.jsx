@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { IMAGE_BASE_URL } from '../services/api';
+import api, { IMAGE_BASE_URL, resolveGarmentImageUrl, handleGarmentImageError } from '../services/api';
 import { 
   Layers, 
   RotateCcw, 
@@ -125,12 +125,9 @@ export const OutfitStudio = () => {
             <div className="aspect-[4/3] rounded-2xl border-2 border-sand-300 overflow-hidden bg-ivory-100 flex items-center justify-center relative shadow-inner">
               {selectedTop ? (
                 <img
-                  src={selectedTop.image_url?.startsWith('http') ? selectedTop.image_url : `${IMAGE_BASE_URL}${selectedTop.image_url}`}
+                  src={resolveGarmentImageUrl(selectedTop.image_url)}
                   alt="Selected Top"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/placeholder-garment.svg';
-                  }}
+                  onError={(e) => handleGarmentImageError(e, selectedTop.image_url)}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -145,12 +142,9 @@ export const OutfitStudio = () => {
             <div className="aspect-[4/3] rounded-2xl border-2 border-sand-300 overflow-hidden bg-ivory-100 flex items-center justify-center relative shadow-inner">
               {selectedBottom ? (
                 <img
-                  src={selectedBottom.image_url?.startsWith('http') ? selectedBottom.image_url : `${IMAGE_BASE_URL}${selectedBottom.image_url}`}
+                  src={resolveGarmentImageUrl(selectedBottom.image_url)}
                   alt="Selected Bottom"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/placeholder-garment.svg';
-                  }}
+                  onError={(e) => handleGarmentImageError(e, selectedBottom.image_url)}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -165,12 +159,9 @@ export const OutfitStudio = () => {
             <div className="aspect-[5/2] rounded-2xl border-2 border-sand-300 overflow-hidden bg-ivory-100 flex items-center justify-center relative shadow-inner">
               {selectedFootwear ? (
                 <img
-                  src={selectedFootwear.image_url?.startsWith('http') ? selectedFootwear.image_url : `${IMAGE_BASE_URL}${selectedFootwear.image_url}`}
+                  src={resolveGarmentImageUrl(selectedFootwear.image_url)}
                   alt="Selected Footwear"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/placeholder-garment.svg';
-                  }}
+                  onError={(e) => handleGarmentImageError(e, selectedFootwear.image_url)}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -229,12 +220,9 @@ export const OutfitStudio = () => {
                   }`}
                 >
                   <img
-                    src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
+                    src={resolveGarmentImageUrl(item.image_url)}
                     alt="Top"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/placeholder-garment.svg';
-                    }}
+                    onError={(e) => handleGarmentImageError(e, item.image_url)}
                     className="w-full h-full object-cover"
                   />
                   {selectedTop?.id === item.id && (
@@ -271,12 +259,9 @@ export const OutfitStudio = () => {
                   }`}
                 >
                   <img
-                    src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
+                    src={resolveGarmentImageUrl(item.image_url)}
                     alt="Bottom"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/placeholder-garment.svg';
-                    }}
+                    onError={(e) => handleGarmentImageError(e, item.image_url)}
                     className="w-full h-full object-cover"
                   />
                   {selectedBottom?.id === item.id && (
@@ -313,12 +298,9 @@ export const OutfitStudio = () => {
                   }`}
                 >
                   <img
-                    src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
+                    src={resolveGarmentImageUrl(item.image_url)}
                     alt="Footwear"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/placeholder-garment.svg';
-                    }}
+                    onError={(e) => handleGarmentImageError(e, item.image_url)}
                     className="w-full h-full object-cover"
                   />
                   {selectedFootwear?.id === item.id && (

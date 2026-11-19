@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api, { IMAGE_BASE_URL } from '../services/api';
+import api, { IMAGE_BASE_URL, resolveGarmentImageUrl, handleGarmentImageError } from '../services/api';
 import { 
   BookmarkCheck, 
   Trash2, 
@@ -179,7 +179,7 @@ export const SavedLooks = () => {
                     {pieceKeys.map((role) => {
                       const item = items[role];
                       if (!item) return null;
-                      const imgUrl = item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`;
+                      const imgUrl = resolveGarmentImageUrl(item.image_url);
 
                       return (
                         <div key={role} className="rounded-xl border border-sand-200 overflow-hidden bg-ivory-50 flex flex-col justify-between">
@@ -187,10 +187,7 @@ export const SavedLooks = () => {
                             <img
                               src={imgUrl}
                               alt={role}
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = '/placeholder-garment.svg';
-                              }}
+                              onError={(e) => handleGarmentImageError(e, item.image_url)}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                             <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-charcoal-950/80 text-white text-[9px] uppercase font-bold tracking-wider">

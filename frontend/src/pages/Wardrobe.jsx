@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { IMAGE_BASE_URL } from '../services/api';
+import api, { IMAGE_BASE_URL, resolveGarmentImageUrl, handleGarmentImageError } from '../services/api';
 import { 
   Shirt, 
   Upload, 
@@ -272,13 +272,10 @@ export const Wardrobe = () => {
               <div key={item.id} className="luxury-card overflow-hidden group flex flex-col justify-between">
                 <div className="aspect-[4/5] bg-ivory-100 overflow-hidden relative">
                   <img
-                    src={item.image_url?.startsWith('http') ? item.image_url : `${IMAGE_BASE_URL}${item.image_url}`}
+                    src={resolveGarmentImageUrl(item.image_url)}
                     alt={item.subcategory || item.category}
                     loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/placeholder-garment.svg';
-                    }}
+                    onError={(e) => handleGarmentImageError(e, item.image_url)}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-2 right-2">
