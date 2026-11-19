@@ -219,9 +219,22 @@ export const AIStylist = () => {
                         #{index + 1}
                       </span>
                       <div>
-                        <h3 className="font-serif font-bold text-charcoal-950 text-base sm:text-lg capitalize">
-                          {outfit.occasion} Look — {outfit.style}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-serif font-bold text-charcoal-950 text-base sm:text-lg capitalize">
+                            {outfit.occasion} Look — {outfit.style}
+                          </h3>
+                          {outfit.wear_status && (
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${
+                              outfit.wear_badge === 'worn_recent'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : outfit.wear_badge === 'in_rotation'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            }`}>
+                              {outfit.wear_status}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-charcoal-800">{outfit.explanation}</p>
                       </div>
                     </div>
@@ -301,7 +314,12 @@ export const AIStylist = () => {
                       <span className="px-2 py-0.5 rounded bg-sand-100">Color Harmony (C): {outfit.metrics.C}%</span>
                       <span className="px-2 py-0.5 rounded bg-sand-100">Category Grammar (K): {outfit.metrics.K}%</span>
                       <span className="px-2 py-0.5 rounded bg-sand-100">Occasion Fit (O): {outfit.metrics.O}%</span>
-                      <span className="px-2 py-0.5 rounded bg-sand-100">Style Affinity (P): {outfit.metrics.P}%</span>
+                      <span className="px-2 py-0.5 rounded bg-sand-100">Style Match (P): {outfit.metrics.P}%</span>
+                      {outfit.metrics.wear_penalty > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold border border-amber-200">
+                          Wear Cooldown: -{outfit.metrics.wear_penalty} pts
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

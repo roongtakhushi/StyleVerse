@@ -122,6 +122,63 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
             missing.append("bottoms (trousers/jeans) or dresses")
         detail_msg = f"Insufficient wardrobe items to generate an outfit. Please upload either (Tops + Bottoms + Footwear) or (Dress + Footwear). Missing: {', '.join(missing)}."
         raise HTTPException(status_code=400, detail=detail_msg)
+
+    # 2b. Wear History & Recency Intelligence (Sync with db.outfit_plans and db.saved_outfits)
+    worn_item_recency = {} # garment_id -> min_days_ago
+    today_date = datetime.utcnow().date()
+    if db is not None:
+        try:
+            recent_plans = []
+            p_cursor = db.outfit_plans.find({"user_id": user_id}).sort("date", -1).limit(30)
+            async for p in p_cursor:
+                recent_plans.append(p)
+                
+            saved_lookup = {}
+            if recent_plans:
+                s_cursor = db.saved_outfits.find({"user_id": user_id})
+                async for s in s_cursor:
+                    s_id = str(s.get("outfit_id", s.get("_id")))
+                    saved_lookup[s_id] = s
+                    
+                for plan in recent_plans:
+                    plan_date_str = plan.get("date", "")
+                    try:
+                        p_date = datetime.strptime(plan_date_str, "%Y-%m-%d").date()
+                        diff_days = abs((today_date - p_date).days)
+                    except Exception:
+                        diff_days = 7
+                        
+                    p_outfit_id = plan.get("outfit_id")
+                    if p_outfit_id and p_outfit_id in saved_lookup:
+                        s_doc = saved_lookup[p_outfit_id]
+                        for role_key in ["top_id", "bottom_id", "dress_id", "footwear_id", "outerwear_id"]:
+                            iid = s_doc.get(role_key)
+                            if iid:
+                                iid_str = str(iid)
+                                if iid_str not in worn_item_recency or diff_days < worn_item_recency[iid_str]:
+                                    worn_item_recency[iid_str] = diff_days
+        except Exception as e:
+            logger.warning(f"Could not load wear history for user {user_id}: {e}")
+
+    def get_outfit_wear_info(garment_ids: list[str]):
+        """Returns wear_penalty (float), wear_status (str), and wear_badge (str)"""
+        min_diff = None
+        for gid in garment_ids:
+            if gid in worn_item_recency:
+                d = worn_item_recency[gid]
+                if min_diff is None or d < min_diff:
+                    min_diff = d
+                    
+        if min_diff is None:
+            return 0.0, "✨ Fresh Pick (Not worn recently)", "fresh"
+        elif min_diff <= 1:
+            return 18.0, "⏱️ Worn recently (Yesterday / Today)", "worn_recent"
+        elif min_diff <= 3:
+            return 8.0, f"⏱️ Worn {min_diff} days ago", "worn_recent"
+        elif min_diff <= 6:
+            return 3.0, f"🔄 In rotation ({min_diff} days ago)", "in_rotation"
+        else:
+            return 0.0, "✨ Fresh Pick (Past 7+ days)", "fresh"
         
     # 3. Generate candidate combinations with strict self-collision and grammar checks
     combinations = []
@@ -137,13 +194,17 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                 if t_id == b_id or (t_img and t_img == b_img):
                     continue
                 for f in footwear:
+                    f_id = str(f.get("_id", f.get("id")))
+                    w_pen, w_status, w_badge = get_outfit_wear_info([t_id, b_id, f_id])
                     eval_res = rank_outfit_combination(
                         top_item=t,
                         bottom_item=b,
                         footwear_item=f,
                         user_palette=user_palette,
                         target_occasion=req.occasion,
-                        preferred_styles=preferred_styles
+                        target_style=req.style or "casual",
+                        preferred_styles=preferred_styles,
+                        wear_penalty=w_pen
                     )
                     comb_id = f"outfit_{uuid_short()}"
                     combinations.append({
@@ -154,6 +215,8 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                         "compatibility_score": eval_res["compatibility_score"],
                         "explanation": eval_res["explanation"],
                         "outfit_type": eval_res.get("outfit_type", "3-Piece Classic Look"),
+                        "wear_status": w_status,
+                        "wear_badge": w_badge,
                         "items": {
                             "top": format_item_summary(t),
                             "bottom": format_item_summary(b),
@@ -185,11 +248,15 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                             continue
                             
                         for f in footwear:
+                            f_id = str(f.get("_id", f.get("id")))
+                            w_pen, w_status, w_badge = get_outfit_wear_info([t_id, b_id, o_id, f_id])
                             eval_res = rank_outfit_combination(
                                 items_dict={"top": t, "bottom": b, "outerwear": o, "footwear": f},
                                 user_palette=user_palette,
                                 target_occasion=req.occasion,
-                                preferred_styles=preferred_styles
+                                target_style=req.style or "smart_casual",
+                                preferred_styles=preferred_styles,
+                                wear_penalty=w_pen
                             )
                             comb_id = f"outfit_{uuid_short()}"
                             combinations.append({
@@ -200,6 +267,8 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                                 "compatibility_score": eval_res["compatibility_score"],
                                 "explanation": eval_res["explanation"],
                                 "outfit_type": eval_res.get("outfit_type", "4-Piece Layered Look"),
+                                "wear_status": w_status,
+                                "wear_badge": w_badge,
                                 "items": {
                                     "top": format_item_summary(t),
                                     "bottom": format_item_summary(b),
@@ -217,11 +286,15 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
             d_img = d.get("image_url", "").strip()
             
             for f in footwear:
+                f_id = str(f.get("_id", f.get("id")))
+                w_pen, w_status, w_badge = get_outfit_wear_info([d_id, f_id])
                 eval_res = rank_outfit_combination(
                     items_dict={"dress": d, "footwear": f},
                     user_palette=user_palette,
                     target_occasion=req.occasion,
-                    preferred_styles=preferred_styles
+                    target_style=req.style or "casual",
+                    preferred_styles=preferred_styles,
+                    wear_penalty=w_pen
                 )
                 comb_id = f"outfit_{uuid_short()}"
                 combinations.append({
@@ -232,6 +305,8 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                     "compatibility_score": eval_res["compatibility_score"],
                     "explanation": eval_res["explanation"],
                     "outfit_type": eval_res.get("outfit_type", "2-Piece Dress Look"),
+                    "wear_status": w_status,
+                    "wear_badge": w_badge,
                     "items": {
                         "dress": format_item_summary(d),
                         "footwear": format_item_summary(f)
@@ -248,11 +323,15 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                     if d_id == o_id or (d_img and d_img == o_img):
                         continue
                     for f in footwear:
+                        f_id = str(f.get("_id", f.get("id")))
+                        w_pen, w_status, w_badge = get_outfit_wear_info([d_id, o_id, f_id])
                         eval_res = rank_outfit_combination(
                             items_dict={"dress": d, "outerwear": o, "footwear": f},
                             user_palette=user_palette,
                             target_occasion=req.occasion,
-                            preferred_styles=preferred_styles
+                            target_style=req.style or "smart_casual",
+                            preferred_styles=preferred_styles,
+                            wear_penalty=w_pen
                         )
                         comb_id = f"outfit_{uuid_short()}"
                         combinations.append({
@@ -263,6 +342,8 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
                             "compatibility_score": eval_res["compatibility_score"],
                             "explanation": eval_res["explanation"],
                             "outfit_type": eval_res.get("outfit_type", "3-Piece Layered Dress Look"),
+                            "wear_status": w_status,
+                            "wear_badge": w_badge,
                             "items": {
                                 "dress": format_item_summary(d),
                                 "outerwear": format_item_summary(o),
@@ -277,15 +358,35 @@ async def generate_outfits(req: OutfitGenerateRequest, current_user: dict = Depe
     
     # Inter-Outfit Diversity: Avoid 5 identical variations that only swap one piece
     seen_combos = set()
+    primary_counts = {}
     top_recommendations = []
+    
     for c in combinations:
-        # Create unique signature of items in outfit
         sig = tuple(sorted([v.get("id", "") for v in c["items"].values()]))
-        if sig not in seen_combos:
-            seen_combos.add(sig)
-            top_recommendations.append(c)
+        if sig in seen_combos:
+            continue
+            
+        primary_id = c["items"].get("dress", {}).get("id") or c["items"].get("top", {}).get("id")
+        if primary_id:
+            count = primary_counts.get(primary_id, 0)
+            if count >= 2 and len(combinations) > 6:
+                continue
+                
+        seen_combos.add(sig)
+        if primary_id:
+            primary_counts[primary_id] = primary_counts.get(primary_id, 0) + 1
+        top_recommendations.append(c)
         if len(top_recommendations) >= 5:
             break
+            
+    if len(top_recommendations) < 3 and combinations:
+        for c in combinations:
+            sig = tuple(sorted([v.get("id", "") for v in c["items"].values()]))
+            if sig not in seen_combos:
+                seen_combos.add(sig)
+                top_recommendations.append(c)
+            if len(top_recommendations) >= 5:
+                break
             
     if not top_recommendations and combinations:
         top_recommendations = combinations[:5]

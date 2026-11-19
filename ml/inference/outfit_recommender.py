@@ -32,11 +32,19 @@ def compute_color_compatibility(item_colors: list[str], palette_colors: list[str
     return float(score)
 
 OCCASION_MATRIX = {
-    "college": {"casual": 95, "streetwear": 90, "smart_casual": 80, "formal": 30, "party": 50},
-    "casual": {"casual": 100, "streetwear": 90, "smart_casual": 85, "formal": 40, "party": 60},
-    "formal": {"formal": 100, "smart_casual": 85, "casual": 20, "party": 50, "streetwear": 10},
-    "party": {"party": 100, "streetwear": 85, "casual": 60, "smart_casual": 80, "formal": 50},
-    "daily": {"casual": 100, "smart_casual": 90, "streetwear": 85, "formal": 50, "party": 50}
+    "college": {"casual": 98, "streetwear": 92, "smart_casual": 82, "formal": 35, "party": 45},
+    "casual": {"casual": 100, "streetwear": 92, "smart_casual": 85, "formal": 35, "party": 50},
+    "formal": {"formal": 100, "smart_casual": 88, "casual": 20, "party": 40, "streetwear": 10},
+    "party": {"party": 100, "streetwear": 82, "smart_casual": 80, "casual": 50, "formal": 55},
+    "daily": {"casual": 100, "smart_casual": 90, "streetwear": 85, "formal": 40, "party": 45}
+}
+
+STYLE_COMPATIBILITY_MATRIX = {
+    "casual": {"casual": 100, "smart_casual": 85, "streetwear": 85, "party": 50, "formal": 25},
+    "smart_casual": {"smart_casual": 100, "casual": 85, "formal": 85, "party": 65, "streetwear": 60},
+    "streetwear": {"streetwear": 100, "casual": 88, "party": 70, "smart_casual": 60, "formal": 15},
+    "formal": {"formal": 100, "smart_casual": 88, "casual": 25, "party": 45, "streetwear": 15},
+    "party": {"party": 100, "smart_casual": 75, "streetwear": 70, "casual": 50, "formal": 55}
 }
 
 def compute_knn_similarity(item_a, item_b) -> float:
@@ -85,16 +93,19 @@ def rank_outfit_combination(
     preferred_styles: list[str] = None,
     items_dict: dict = None,
     dress_item: dict = None,
-    outerwear_item: dict = None
+    outerwear_item: dict = None,
+    target_style: str = "casual",
+    wear_penalty: float = 0.0
 ) -> dict:
     """
     Calculates outfit compatibility score S for 2-piece, 3-piece, or 4-piece outfits:
-    S = 0.35 * C + 0.25 * K + 0.20 * O + 0.10 * P + 0.10 * V
+    S = 0.25 * C + 0.20 * K + 0.25 * O + 0.20 * S_target + 0.10 * V - wear_penalty
     
     Topologies supported:
     - 2-Piece: Dress + Footwear
     - 3-Piece: Top + Bottom + Footwear
     - 4-Piece: Top + Bottom + Outerwear + Footwear
+    - 3-Piece Layered Dress: Dress + Outerwear + Footwear
     """
     if user_palette is None:
         user_palette = ["#263F36", "#B47A57", "#E4CDA5", "#8C5835"]
@@ -192,14 +203,14 @@ def rank_outfit_combination(
         occ_scores.append(occ_map.get(st, 75))
     O = float(np.mean(occ_scores)) if occ_scores else 75.0
     
-    # 4. Personal Preference Match (P)
-    matches = 0
+    # 4. Target Style Congruence (S_target)
+    style_key = target_style.lower() if target_style else "casual"
+    style_map = STYLE_COMPATIBILITY_MATRIX.get(style_key, STYLE_COMPATIBILITY_MATRIX["casual"])
+    style_scores = []
     for role, piece in pieces.items():
         st = piece.get("style", "casual").lower()
-        if st in [s.lower() for s in preferred_styles]:
-            matches += 1
-    total_checks = max(1, len(pieces))
-    P = (matches / total_checks) * 100.0
+        style_scores.append(style_map.get(st, 65))
+    S_target = float(np.mean(style_scores)) if style_scores else 75.0
     
     # 5. Visual/Style Similarity via KNN & Embeddings (V)
     pairwise_similarities = []
@@ -214,16 +225,25 @@ def rank_outfit_combination(
     else:
         V = 85.0
         
-    # Weighted Final Score S
-    S = (0.35 * C) + (0.25 * K) + (0.20 * O) + (0.10 * P) + (0.10 * V)
-    final_score = round(min(100.0, max(0.0, S)), 1)
+    # Weighted Final Score S (25% Color + 20% Grammar + 25% Occasion + 20% Style + 10% Visual)
+    base_score = (0.25 * C) + (0.20 * K) + (0.25 * O) + (0.20 * S_target) + (0.10 * V)
+    final_score = round(min(100.0, max(0.0, base_score - wear_penalty)), 1)
     
-    explanation = f"{outfit_type}: Color harmony ({round(C)}%) matches your palette; well-suited for {target_occasion.capitalize()} ({round(O)}% occasion fit) with {round(V)}% style consistency."
+    explanation = f"{outfit_type}: Color harmony ({round(C)}%) matches your palette; calibrated for {target_occasion.capitalize()} ({round(O)}% occasion fit) and {style_key.capitalize()} mood ({round(S_target)}% style match)."
+    if wear_penalty > 0:
+        explanation += f" (Adjusted for recent wear: -{round(wear_penalty)} pts)"
     
     res = {
         "compatibility_score": final_score,
         "outfit_type": outfit_type,
-        "metrics": {"C": round(C, 1), "K": K, "O": round(O, 1), "P": round(P, 1), "V": round(V, 1)},
+        "metrics": {
+            "C": round(C, 1), 
+            "K": K, 
+            "O": round(O, 1), 
+            "P": round(S_target, 1), 
+            "V": round(V, 1),
+            "wear_penalty": round(wear_penalty, 1)
+        },
         "explanation": explanation
     }
     
