@@ -30,6 +30,8 @@ export const SkinAnalysis = () => {
           setAnalysisResult({
             estimated_skin_tone: res.data.skin_tone || 'medium',
             estimated_undertone: res.data.undertone || 'neutral',
+            season_name: res.data.season_name,
+            styling_advice: res.data.styling_advice,
             primary_palette: res.data.primary_palette || [],
             suggested_palettes: res.data.palettes || {},
             sample_hex: res.data.primary_palette?.[0] || '#C49A45'
@@ -97,8 +99,10 @@ export const SkinAnalysis = () => {
       if (res.data.primary_palette) {
         setAnalysisResult(prev => ({
           ...prev,
+          season_name: res.data.season_name,
+          styling_advice: res.data.styling_advice,
           primary_palette: res.data.primary_palette,
-          suggested_palettes: res.data.palettes || prev.suggested_palettes
+          suggested_palettes: res.data.palettes || prev?.suggested_palettes
         }));
       }
       setSuccessMsg(`Undertone updated to "${undertoneChoice.toUpperCase()}". Your personalized palette has been saved.`);
@@ -235,6 +239,24 @@ export const SkinAnalysis = () => {
               </div>
             </div>
           </div>
+
+          {/* Seasonal Analysis Card */}
+          {analysisResult?.season_name && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-sand-100/60 border border-sand-300 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-charcoal-800">Seasonal Profile</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-charcoal-950 text-white text-[11px] font-medium font-serif">
+                  {analysisResult.season_name}
+                </span>
+              </div>
+              {analysisResult.styling_advice && (
+                <p className="text-xs text-charcoal-900 leading-relaxed">
+                  <strong className="font-semibold text-charcoal-950">Stylist Recommendation: </strong>
+                  {analysisResult.styling_advice}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Interactive Undertone Selector */}
           <div className="space-y-3">

@@ -38,6 +38,9 @@ async def analyze_skin(file: UploadFile = File(...), current_user: dict = Depend
                 "undertone": result["estimated_undertone"],
                 "sample_hex": result["sample_hex"],
                 "colour_palette": result["primary_palette"],
+                "season_name": result.get("season_name"),
+                "styling_advice": result.get("styling_advice"),
+                "ita_angle": result.get("ita_angle"),
                 "undertone_confirmed": False
             }},
             upsert=True
@@ -60,7 +63,9 @@ async def confirm_undertone(data: SkinToneConfirm, current_user: dict = Depends(
                 "undertone": data.undertone,
                 "skin_tone_estimate": tone,
                 "undertone_confirmed": True,
-                "colour_palette": palette_info["primary_palette"]
+                "colour_palette": palette_info["primary_palette"],
+                "season_name": palette_info.get("season_name"),
+                "styling_advice": palette_info.get("styling_advice")
             }},
             upsert=True
         )
@@ -69,6 +74,8 @@ async def confirm_undertone(data: SkinToneConfirm, current_user: dict = Depends(
         "message": "Undertone and personalized palette updated successfully.",
         "undertone": data.undertone,
         "skin_tone": tone,
+        "season_name": palette_info.get("season_name"),
+        "styling_advice": palette_info.get("styling_advice"),
         "primary_palette": palette_info["primary_palette"],
         "palettes": palette_info["palettes"]
     }
@@ -81,11 +88,16 @@ async def get_user_palette(current_user: dict = Depends(get_current_user)):
     if db is not None:
         profile = await db.style_profiles.find_one({"user_id": user_id})
         if profile and profile.get("colour_palette"):
+            tone = profile.get("skin_tone_estimate", "medium")
+            undertone = profile.get("undertone", "neutral")
+            rec = get_recommended_palettes(undertone, tone)
             return {
-                "undertone": profile.get("undertone", "neutral"),
-                "skin_tone": profile.get("skin_tone_estimate", "medium"),
-                "primary_palette": profile.get("colour_palette"),
-                "palettes": get_recommended_palettes(profile.get("undertone", "neutral"), profile.get("skin_tone_estimate", "medium"))["palettes"]
+                "undertone": undertone,
+                "skin_tone": tone,
+                "season_name": profile.get("season_name") or rec.get("season_name"),
+                "styling_advice": profile.get("styling_advice") or rec.get("styling_advice"),
+                "primary_palette": profile.get("colour_palette") or rec.get("primary_palette"),
+                "palettes": rec.get("palettes")
             }
             
     # Default fallback

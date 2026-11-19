@@ -5,6 +5,7 @@ from PIL import Image
 from ml.inference.skin_analysis import (
     estimate_skin_tone_category,
     estimate_undertone,
+    calculate_ita,
     get_recommended_palettes
 )
 from ml.preprocessing.color_extraction import rgb_to_hex
@@ -186,18 +187,24 @@ def analyze_face_skin(image_path: str) -> dict:
     else:
         estimated_undertone = "neutral"
         
+    ita_val = calculate_ita(L_cielab, b_cielab)
     palette_data = get_recommended_palettes(estimated_undertone, estimated_skin_tone)
     
     return {
         "estimated_skin_tone": estimated_skin_tone,
         "estimated_undertone": estimated_undertone,
         "sample_hex": sample_hex,
+        "ita_angle": ita_val,
+        "season_name": palette_data.get("season_name"),
+        "season_description": palette_data.get("season_description"),
+        "styling_advice": palette_data.get("styling_advice"),
         "suggested_palettes": palette_data["palettes"],
         "primary_palette": palette_data["primary_palette"],
         "cielab_metrics": {
             "L_star": round(L_cielab, 1),
             "a_star": round(a_cielab, 1),
             "b_star": round(b_cielab, 1),
+            "ita_angle": ita_val,
             "method": method_used
         },
         "requires_confirmation": True

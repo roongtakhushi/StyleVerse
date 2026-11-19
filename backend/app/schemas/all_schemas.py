@@ -53,6 +53,11 @@ class SkinAnalysisResponse(BaseModel):
     sample_hex: str
     suggested_palettes: Dict[str, List[str]]
     primary_palette: List[str]
+    season_name: Optional[str] = None
+    season_description: Optional[str] = None
+    styling_advice: Optional[str] = None
+    ita_angle: Optional[float] = None
+    cielab_metrics: Optional[Dict[str, Any]] = None
     requires_confirmation: bool = True
 
 # Wardrobe Schemas
