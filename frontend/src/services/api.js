@@ -15,7 +15,8 @@ export const resolveGarmentImageUrl = (imgUrl) => {
   if (imgUrl.startsWith('http')) return imgUrl;
   const filename = imgUrl.split('/').pop();
   if (filename && (filename.startsWith('studio_pure_') || filename.startsWith('studio_live_'))) {
-    return `${GITHUB_RAW_BASE}${filename}`;
+    // Deliver instantly from Vercel Edge CDN same-origin (Mumbai edge node in India)
+    return `/uploads/${filename}`;
   }
   return `${IMAGE_BASE_URL}${imgUrl.startsWith('/') ? imgUrl : `/${imgUrl}`}`;
 };
@@ -24,6 +25,7 @@ export const handleGarmentImageError = (e, originalUrl) => {
   const currentSrc = e.currentTarget.src || '';
   const fname = (originalUrl || '').split('/').pop();
   
+  // 1st fallback: Fastly / GitHub Raw global repository CDN
   if (fname && !currentSrc.includes('raw.githubusercontent.com')) {
     e.currentTarget.src = `${GITHUB_RAW_BASE}${fname}`;
   } else if (fname && !currentSrc.includes('/uploads/')) {

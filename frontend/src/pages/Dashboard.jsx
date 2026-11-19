@@ -202,6 +202,7 @@ export const Dashboard = () => {
                       src={resolveGarmentImageUrl(item.image_url)}
                       alt={item.subcategory || item.category}
                       loading="lazy"
+                      decoding="async"
                       onError={(e) => handleGarmentImageError(e, item.image_url)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

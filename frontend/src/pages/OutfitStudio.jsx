@@ -127,6 +127,7 @@ export const OutfitStudio = () => {
                 <img
                   src={resolveGarmentImageUrl(selectedTop.image_url)}
                   alt="Selected Top"
+                  decoding="async"
                   onError={(e) => handleGarmentImageError(e, selectedTop.image_url)}
                   className="w-full h-full object-contain"
                 />
@@ -144,6 +145,7 @@ export const OutfitStudio = () => {
                 <img
                   src={resolveGarmentImageUrl(selectedBottom.image_url)}
                   alt="Selected Bottom"
+                  decoding="async"
                   onError={(e) => handleGarmentImageError(e, selectedBottom.image_url)}
                   className="w-full h-full object-contain"
                 />
@@ -161,6 +163,7 @@ export const OutfitStudio = () => {
                 <img
                   src={resolveGarmentImageUrl(selectedFootwear.image_url)}
                   alt="Selected Footwear"
+                  decoding="async"
                   onError={(e) => handleGarmentImageError(e, selectedFootwear.image_url)}
                   className="w-full h-full object-contain"
                 />

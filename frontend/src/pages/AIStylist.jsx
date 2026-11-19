@@ -270,6 +270,8 @@ export const AIStylist = () => {
                                 <img
                                   src={img}
                                   alt={item?.subcategory || slot}
+                                  loading="lazy"
+                                  decoding="async"
                                   onError={(e) => handleGarmentImageError(e, item?.image_url)}
                                   className="w-full h-full object-cover"
                                 />
